@@ -18,4 +18,9 @@ def show_message():
 buton = tk.Button(window, text="Show message!", command=show_message)
 buton.pack(pady=10)
 
+close = tk.Button(window, text="Close", command=window.destroy)
+close.pack(pady=50)
+
+exit = tk.Button(window, text="Exit", command= window.destroy)
+exit.pack()
 window.mainloop()
