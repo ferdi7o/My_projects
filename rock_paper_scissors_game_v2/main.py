@@ -1,132 +1,160 @@
 import tkinter as tk
-from tkinter import messagebox, PhotoImage
+from tkinter import messagebox
+from PIL import Image, ImageTk
 import random
 import pygame
-from PIL import Image, ImageTk
 
-# --- Ses ve Müzik Başlat ---
+# Pygame for sound
 pygame.init()
 pygame.mixer.init()
-pygame.mixer.music.load("assets/music.mp3")
-pygame.mixer.music.play(-1)  # Sonsuz döngü
+pygame.mixer.music.load("music.mp3")
+pygame.mixer.music.play(-1)  # Loop music
 
-# Ses efektleri
-clap_sound = pygame.mixer.Sound("assets/clap.wav")
-sad_sound = pygame.mixer.Sound("assets/sad.wav")
+win_sound = pygame.mixer.Sound("clap.wav")
+lose_sound = pygame.mixer.Sound("sad.wav")
 
-# Global değişkenler
-user_score = 0
-cpu_score = 0
+def play_win_sound():
+    win_sound.play()
+
+def play_lose_sound():
+    lose_sound.play()
+
+# Globals
+player_score = 0
+computer_score = 0
 total_rounds = 0
-max_score = 3
+is_muted = False
+
+# Main window
+root = tk.Tk()
+root.title("Taş Kağıt Makas - Ferdi Gradient Edition")
+root.geometry("360x640")
+root.resizable(False, False)
+
+# Background image
+bg_image = Image.open("background_gradient.png")
+bg_photo = ImageTk.PhotoImage(bg_image)
+bg_label = tk.Label(root, image=bg_photo)
+bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+# Top mute button
+def toggle_mute():
+    global is_muted
+    if is_muted:
+        pygame.mixer.music.unpause()
+        mute_btn.config(text="🔊")
+    else:
+        pygame.mixer.music.pause()
+        mute_btn.config(text="🔇")
+    is_muted = not is_muted
+
+mute_btn = tk.Button(root, text="🔊", font=("Arial", 12), command=toggle_mute, bg="white")
+mute_btn.place(x=10, y=10)
+
+# Title
+title = tk.Label(root, text="ROCK PAPER SCISSORS", font=("Helvetica", 18, "bold"), bg="white")
+title.pack(pady=(50, 10))
+
+# Images
+choices = ["rock", "paper", "scissors"]
+image_dict = {
+    "rock": ImageTk.PhotoImage(Image.open("tas.png").resize((80, 80))),
+    "paper": ImageTk.PhotoImage(Image.open("kagit.png").resize((80, 80))),
+    "scissors": ImageTk.PhotoImage(Image.open("makas.png").resize((80, 80))),
+    "question": ImageTk.PhotoImage(Image.open("question.png").resize((80, 80)))
+}
+
+# === SCORE AND IMAGE AREA ===
+center_frame = tk.Frame(root, bg="white")
+center_frame.pack(pady=10)
+
+# Scores (You / Computer)
+score_frame = tk.Frame(center_frame, bg="white")
+score_frame.pack(pady=10)
+
+you_score_frame = tk.Label(score_frame, text="YOU\n0", font=("Arial", 16, "bold"), bg="#00CED1", fg="white", width=10, height=3)
+you_score_frame.grid(row=0, column=0, padx=20)
+
+comp_score_frame = tk.Label(score_frame, text="COMPUTER\n0", font=("Arial", 16, "bold"), bg="#9370DB", fg="white", width=10, height=3)
+comp_score_frame.grid(row=0, column=1, padx=20)
+
+# Player & Computer Images
+images_frame = tk.Frame(center_frame, bg="white")
+images_frame.pack(pady=10)
+
+player_img_label = tk.Label(images_frame, image=image_dict["question"])
+player_img_label.grid(row=0, column=0, padx=40)
+
+computer_img_label = tk.Label(images_frame, image=image_dict["question"])
+computer_img_label.grid(row=0, column=1, padx=40)
+
+# Round counter
+round_label = tk.Label(root, text="Round: 0", font=("Arial", 12), bg="white")
+round_label.pack(pady=10)
+
+# Game Logic
+def determine_winner(player, computer):
+    global player_score, computer_score, total_rounds
+    total_rounds += 1
+    round_label.config(text=f"Round: {total_rounds}")
+
+    player_img_label.config(image=image_dict[player])
+    computer_img_label.config(image=image_dict[computer])
+
+    if player == computer:
+        return
+    elif (player == "rock" and computer == "scissors") or \
+         (player == "paper" and computer == "rock") or \
+         (player == "scissors" and computer == "paper"):
+        player_score += 1
+        you_score_frame.config(text=f"YOU\n{player_score}")
+        play_win_sound()
+    else:
+        computer_score += 1
+        comp_score_frame.config(text=f"COMPUTER\n{computer_score}")
+        play_lose_sound()
+
+    check_game_end()
+
+def check_game_end():
+    if player_score == 3 or computer_score == 3:
+        winner = "You win! 🎉" if player_score == 3 else "Computer wins! 😢"
+        messagebox.showinfo("Game Over", winner)
+        reset_game()
+
+def player_choice(choice):
+    computer = random.choice(choices)
+    determine_winner(choice, computer)
 
 def reset_game():
-    global user_score, cpu_score, total_rounds
-    user_score = 0
-    cpu_score = 0
+    global player_score, computer_score, total_rounds
+    player_score = 0
+    computer_score = 0
     total_rounds = 0
-    score_label.config(text="Skor • Sen: 0  Bilgisayar: 0")
-    result_label.config(text="")
-    stats_label.config(text="Toplam Oynanan Tur: 0")
-    user_label.config(image=question_img)
-    cpu_label.config(image=question_img)
-    for btn in choice_buttons:
-        btn.config(state="normal")
+    you_score_frame.config(text="YOU\n0")
+    comp_score_frame.config(text="COMPUTER\n0")
+    round_label.config(text="Round: 0")
+    player_img_label.config(image=image_dict["question"])
+    computer_img_label.config(image=image_dict["question"])
 
-# Kazanma kontrolü
-def determine_winner(user, cpu):
-    if user == cpu:
-        return "Beraber"
-    elif (user == "Taş" and cpu == "Makas") or \
-         (user == "Kağıt" and cpu == "Taş") or \
-         (user == "Makas" and cpu == "Kağıt"):
-        return "Kullanıcı"
-    else:
-        return "Bilgisayar"
-
-# Oyun oynama
-def play(user_choice):
-    global user_score, cpu_score, total_rounds
-
-    cpu_choice = random.choice(["Taş", "Kağıt", "Makas"])
-    total_rounds += 1
-    stats_label.config(text=f"Toplam Oynanan Tur: {total_rounds}")
-
-    # Görsel güncelle
-    user_label.config(image=images[user_choice])
-    cpu_label.config(image=images[cpu_choice])
-
-    result = determine_winner(user_choice, cpu_choice)
-
-    if result == "Kullanıcı":
-        user_score += 1
-        result_label.config(text="✔️ Sen kazandın!", fg="green")
-    elif result == "Bilgisayar":
-        cpu_score += 1
-        result_label.config(text="❌ Bilgisayar kazandı!", fg="red")
-    else:
-        result_label.config(text="🤝 Berabere!", fg="gray")
-
-    score_label.config(text=f"Skor • Sen: {user_score}  Bilgisayar: {cpu_score}")
-
-    if user_score == max_score:
-        clap_sound.play()
-        show_konfeti("🏆 TEBRİKLER! Oyunu Sen Kazandın!")
-    elif cpu_score == max_score:
-        sad_sound.play()
-        show_konfeti("💀 Bilgisayar Kazandı!")
-
-def show_konfeti(message):
-    for btn in choice_buttons:
-        btn.config(state="disabled")
-    messagebox.showinfo("Oyun Bitti", message)
-
-# --- Pencere ---
-root = tk.Tk()
-root.title("Taş Kağıt Makas - Ferdi Deluxe Edition 🎮")
-root.geometry("400x700")
-root.config(bg="#eaf4fc")
-
-# --- Görseller ---
-images = {
-    "Taş": PhotoImage(file="assets/tas.png"),
-    "Kağıt": PhotoImage(file="assets/kagit.png"),
-    "Makas": PhotoImage(file="assets/makas.png")
-}
-question_img = PhotoImage(file="assets/question.png")
-
-# --- Başlık ---
-title = tk.Label(root, text="Taş - Kağıt - Makas", font=("Helvetica", 22, "bold"), bg="#eaf4fc")
-title.pack(pady=10)
-
-score_label = tk.Label(root, text="Skor • Sen: 0  Bilgisayar: 0", font=("Helvetica", 14), bg="#eaf4fc")
-score_label.pack()
-
-stats_label = tk.Label(root, text="Toplam Oynanan Tur: 0", font=("Helvetica", 12), bg="#eaf4fc")
-stats_label.pack(pady=5)
-
-# --- Seçim Görselleri ---
-user_label = tk.Label(root, image=question_img, bg="#eaf4fc")
-cpu_label = tk.Label(root, image=question_img, bg="#eaf4fc")
-user_label.pack(pady=5)
-cpu_label.pack(pady=5)
-
-result_label = tk.Label(root, text="", font=("Helvetica", 16, "bold"), bg="#eaf4fc")
-result_label.pack(pady=10)
-
-# --- Seçim Butonları ---
-button_frame = tk.Frame(root, bg="#eaf4fc")
+# Choice buttons
+button_frame = tk.Frame(root, bg="white")
 button_frame.pack(pady=10)
 
-choice_buttons = []
-for choice in ["Taş", "Kağıt", "Makas"]:
-    btn = tk.Button(button_frame, image=images[choice], command=lambda ch=choice: play(ch))
-    btn.pack(side="left", padx=10)
-    choice_buttons.append(btn)
+rock_btn = tk.Button(button_frame, image=image_dict["rock"], command=lambda: player_choice("rock"))
+rock_btn.grid(row=0, column=0, padx=10)
 
-# --- Yeni Oyun ---
-reset_button = tk.Button(root, text="🔁 Yeni Oyun", font=("Helvetica", 12), command=reset_game)
-reset_button.pack(pady=20)
+paper_btn = tk.Button(button_frame, image=image_dict["paper"], command=lambda: player_choice("paper"))
+paper_btn.grid(row=0, column=1, padx=10)
 
-# --- Başlat ---
+scissors_btn = tk.Button(button_frame, image=image_dict["scissors"], command=lambda: player_choice("scissors"))
+scissors_btn.grid(row=0, column=2, padx=10)
+
+# New Game & Exit buttons
+bottom_frame = tk.Frame(root, bg="white")
+bottom_frame.pack(pady=15)
+
+tk.Button(bottom_frame, text="New Game", command=reset_game, font=("Arial", 12), bg="#FF69B4").grid(row=0, column=0, padx=10)
+tk.Button(bottom_frame, text="Çıkış", command=root.quit, font=("Arial", 12), bg="gray").grid(row=0, column=1, padx=10)
+
 root.mainloop()
