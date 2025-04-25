@@ -7,17 +7,26 @@ import pygame
 # Pygame for sound
 pygame.init()
 pygame.mixer.init()
-pygame.mixer.music.load("music.mp3")
-pygame.mixer.music.play(-1)  # Loop music
+pygame.mixer.music.load("assets/music.mp3")
+pygame.mixer.music.set_volume(0.3)
+pygame.mixer.music.play(-1)
 
-win_sound = pygame.mixer.Sound("clap.wav")
-lose_sound = pygame.mixer.Sound("sad.wav")
+win_sound = pygame.mixer.Sound("assets/clap.wav")
+lose_sound = pygame.mixer.Sound("assets/sad.wav")
+touch_sound = pygame.mixer.Sound("assets/touch.wav")
+
+
 
 def play_win_sound():
     win_sound.play()
 
 def play_lose_sound():
     lose_sound.play()
+
+def play_touch_sound():
+    if not is_muted:
+        touch_sound.play()
+
 
 # Globals
 player_score = 0
@@ -32,12 +41,12 @@ root.geometry("360x640")
 root.resizable(False, False)
 
 # Background image
-bg_image = Image.open("background_gradient.png")
+bg_image = Image.open("assets/background_gradient.png")
 bg_photo = ImageTk.PhotoImage(bg_image)
 bg_label = tk.Label(root, image=bg_photo)
 bg_label.place(x=0, y=0, relwidth=1, relheight=1)
 
-# Top mute button
+# Mute Button
 def toggle_mute():
     global is_muted
     if is_muted:
@@ -52,24 +61,11 @@ mute_btn = tk.Button(root, text="🔊", font=("Arial", 12), command=toggle_mute,
 mute_btn.place(x=10, y=10)
 
 # Title
-title = tk.Label(root, text="ROCK PAPER SCISSORS", font=("Helvetica", 18, "bold"), bg="white")
+title = tk.Label(root, text="ROCK PAPER SCISSORS", font=("Helvetica", 18, "bold"), bg="#ffffff")
 title.pack(pady=(50, 10))
 
-# Images
-choices = ["rock", "paper", "scissors"]
-image_dict = {
-    "rock": ImageTk.PhotoImage(Image.open("tas.png").resize((80, 80))),
-    "paper": ImageTk.PhotoImage(Image.open("kagit.png").resize((80, 80))),
-    "scissors": ImageTk.PhotoImage(Image.open("makas.png").resize((80, 80))),
-    "question": ImageTk.PhotoImage(Image.open("question.png").resize((80, 80)))
-}
-
-# === SCORE AND IMAGE AREA ===
-center_frame = tk.Frame(root, bg="white")
-center_frame.pack(pady=10)
-
-# Scores (You / Computer)
-score_frame = tk.Frame(center_frame, bg="white")
+# Score Frame
+score_frame = tk.Frame(root, bg="white")
 score_frame.pack(pady=10)
 
 you_score_frame = tk.Label(score_frame, text="YOU\n0", font=("Arial", 16, "bold"), bg="#00CED1", fg="white", width=10, height=3)
@@ -78,18 +74,27 @@ you_score_frame.grid(row=0, column=0, padx=20)
 comp_score_frame = tk.Label(score_frame, text="COMPUTER\n0", font=("Arial", 16, "bold"), bg="#9370DB", fg="white", width=10, height=3)
 comp_score_frame.grid(row=0, column=1, padx=20)
 
-# Player & Computer Images
-images_frame = tk.Frame(center_frame, bg="white")
-images_frame.pack(pady=10)
+# Images
+choices = ["rock", "paper", "scissors"]
+image_dict = {
+    "rock": ImageTk.PhotoImage(Image.open("assets/tas.png").resize((80, 80))),
+    "paper": ImageTk.PhotoImage(Image.open("assets/kagit.png").resize((80, 80))),
+    "scissors": ImageTk.PhotoImage(Image.open("assets/makas.png").resize((80, 80))),
+    "question": ImageTk.PhotoImage(Image.open("assets/question.png").resize((80, 80)))
+}
 
-player_img_label = tk.Label(images_frame, image=image_dict["question"])
-player_img_label.grid(row=0, column=0, padx=40)
+# Player & Computer Choice Display
+image_frame = tk.Frame(root, bg="white")
+image_frame.pack(pady=10)
 
-computer_img_label = tk.Label(images_frame, image=image_dict["question"])
-computer_img_label.grid(row=0, column=1, padx=40)
+player_img_label = tk.Label(image_frame, image=image_dict["question"], bg="white")
+player_img_label.grid(row=0, column=0, padx=20)
+
+computer_img_label = tk.Label(image_frame, image=image_dict["question"], bg="white")
+computer_img_label.grid(row=0, column=1, padx=20)
 
 # Round counter
-round_label = tk.Label(root, text="Round: 0", font=("Arial", 12), bg="white")
+round_label = tk.Label(root, text="Round: 0", font=("Arial", 12), bg="#ffffff")
 round_label.pack(pady=10)
 
 # Game Logic
@@ -108,21 +113,24 @@ def determine_winner(player, computer):
          (player == "scissors" and computer == "paper"):
         player_score += 1
         you_score_frame.config(text=f"YOU\n{player_score}")
-        play_win_sound()
     else:
         computer_score += 1
         comp_score_frame.config(text=f"COMPUTER\n{computer_score}")
-        play_lose_sound()
 
     check_game_end()
 
 def check_game_end():
-    if player_score == 3 or computer_score == 3:
-        winner = "You win! 🎉" if player_score == 3 else "Computer wins! 😢"
+    if player_score == 5 or computer_score == 5:
+        winner = "You win! 🎉" if player_score == 5 else "Computer wins! 😢"
         messagebox.showinfo("Game Over", winner)
+        if player_score == 5:
+            play_win_sound()
+        else:
+            play_lose_sound()
         reset_game()
 
 def player_choice(choice):
+    play_touch_sound()
     computer = random.choice(choices)
     determine_winner(choice, computer)
 
@@ -137,24 +145,24 @@ def reset_game():
     player_img_label.config(image=image_dict["question"])
     computer_img_label.config(image=image_dict["question"])
 
-# Choice buttons
-button_frame = tk.Frame(root, bg="white")
+# Choice Buttons
+button_frame = tk.Frame(root, bg="#462E9D")  # Aynı mor ton
 button_frame.pack(pady=10)
 
-rock_btn = tk.Button(button_frame, image=image_dict["rock"], command=lambda: player_choice("rock"))
+rock_btn = tk.Button(button_frame, image=image_dict["rock"], command=lambda: player_choice("rock"), borderwidth=0)
 rock_btn.grid(row=0, column=0, padx=10)
 
-paper_btn = tk.Button(button_frame, image=image_dict["paper"], command=lambda: player_choice("paper"))
+paper_btn = tk.Button(button_frame, image=image_dict["paper"], command=lambda: player_choice("paper"), borderwidth=0)
 paper_btn.grid(row=0, column=1, padx=10)
 
-scissors_btn = tk.Button(button_frame, image=image_dict["scissors"], command=lambda: player_choice("scissors"))
+scissors_btn = tk.Button(button_frame, image=image_dict["scissors"], command=lambda: player_choice("scissors"), borderwidth=0)
 scissors_btn.grid(row=0, column=2, padx=10)
 
-# New Game & Exit buttons
-bottom_frame = tk.Frame(root, bg="white")
+# New Game & Exit
+bottom_frame = tk.Frame(root, bg="#462E9D")  # Arka planla uyumlu
 bottom_frame.pack(pady=15)
 
-tk.Button(bottom_frame, text="New Game", command=reset_game, font=("Arial", 12), bg="#FF69B4").grid(row=0, column=0, padx=10)
-tk.Button(bottom_frame, text="Çıkış", command=root.quit, font=("Arial", 12), bg="gray").grid(row=0, column=1, padx=10)
+tk.Button(bottom_frame, text="New Game", command=reset_game, font=("Arial", 12), bg="#FF69B4", fg="black", borderwidth=0).grid(row=0, column=0, padx=10)
+tk.Button(bottom_frame, text="Çıkış", command=root.quit, font=("Arial", 12), bg="gray", fg="white", borderwidth=0).grid(row=0, column=1, padx=10)
 
 root.mainloop()
