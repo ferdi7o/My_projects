@@ -118,6 +118,77 @@ class RPSGame(FloatLayout):
         self.add_widget(self.reset_btn)
         self.add_widget(self.exit_btn)
 
+        # Ayarlar (Settings) butonu
+        self.settings_btn = Button(background_normal="assets/settings.png", size_hint=(None, None), size=(100, 100),
+                                   pos_hint={"right": 0.98, "top": 0.98}, on_press=self.open_settings)
+        self.add_widget(self.settings_btn)
+
+        # Kazanma/Kaybetme/Beraberlik yazısı
+        self.result_label = Label(
+            text="",
+            font_size='24sp',
+            color=(1, 1, 1, 1),  # Başlangıçta görünmez gibi beyaz
+            bold=True,
+            size_hint=(None, None),
+            size=(200, 50),
+            pos_hint={"center_x": 0.5, "center_y": 0.52}
+        )
+        self.add_widget(self.result_label)
+
+    def open_settings(self, instance):
+        layout = BoxLayout(orientation='vertical', padding=20, spacing=20)
+
+        # Müzik Aç/Kapa Switch
+        music_btn = Button(
+            text="Müzik: Açık" if not self.is_muted else "Müzik: Kapalı",
+            size_hint=(1, None),
+            height=50
+        )
+        music_btn.bind(on_press=self.toggle_music)
+
+        # Ses Seviyesi Slider
+        from kivy.uix.slider import Slider
+        volume_slider = Slider(min=0, max=1, value=self.sounds["music"].volume if self.sounds["music"] else 0.5)
+        volume_slider.bind(value=self.set_volume)
+
+        # Gece Modu (Tema değişimi) Buton
+        theme_btn = Button(
+            text="Gece Moduna Geç",
+            size_hint=(1, None),
+            height=50
+        )
+        theme_btn.bind(on_press=self.toggle_theme)
+
+        layout.add_widget(music_btn)
+        layout.add_widget(Label(text="Ses Seviyesi"))
+        layout.add_widget(volume_slider)
+        layout.add_widget(theme_btn)
+
+        self.settings_popup = Popup(title="Ayarlar", content=layout, size_hint=(None, None), size=(300, 400))
+        self.settings_popup.open()
+
+    def toggle_music(self, instance):
+        self.is_muted = not self.is_muted
+        if self.sounds["music"]:
+            if self.is_muted:
+                self.sounds["music"].stop()
+                instance.text = "Müzik: Kapalı"
+            else:
+                self.sounds["music"].play()
+                instance.text = "Müzik: Açık"
+
+    def set_volume(self, instance, value):
+        if self.sounds["music"]:
+            self.sounds["music"].volume = value
+
+    def toggle_theme(self, instance):
+        if self.bg.source == "assets/background.png":
+            self.bg.source = "assets/dark_background.png"  # Gece modu arka planı (sen hazırlarsan)
+            instance.text = "Gündüz Moduna Geç"
+        else:
+            self.bg.source = "assets/background.png"
+            instance.text = "Gece Moduna Geç"
+
     def toggle_mute(self, instance):
         if self.sounds["music"]:
             self.is_muted = not self.is_muted
@@ -141,14 +212,20 @@ class RPSGame(FloatLayout):
         self.player_image.source = f"assets/{player}.png"
         self.computer_image.source = f"assets/{computer}.png"
 
+        # Önce sonucu göster
         if player == computer:
-            return
+            self.result_label.text = "Draw"
+            self.result_label.color = (0.3, 0.6, 1, 1)  # Mavi
         elif (player == "rock" and computer == "scissors") or \
-             (player == "paper" and computer == "rock") or \
-             (player == "scissors" and computer == "paper"):
+                (player == "paper" and computer == "rock") or \
+                (player == "scissors" and computer == "paper"):
+            self.result_label.text = "You Win"
+            self.result_label.color = (0.2, 0.8, 0.2, 1)  # Yeşil
             self.player_score += 1
             self.player_label.text = f"YOU\n{self.player_score}"
         else:
+            self.result_label.text = "You Lose"
+            self.result_label.color = (1, 0.2, 0.2, 1)  # Kırmızı
             self.computer_score += 1
             self.computer_label.text = f"COMPUTER\n{self.computer_score}"
 
@@ -166,6 +243,7 @@ class RPSGame(FloatLayout):
         self.player_score = 0
         self.computer_score = 0
         self.total_rounds = 0
+        self.result_label.text = ""
         self.player_label.text = "YOU\n0"
         self.computer_label.text = "COMPUTER\n0"
         self.round_label.text = "Round: 0"
