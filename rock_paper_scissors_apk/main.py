@@ -41,8 +41,14 @@ class RPSGame(FloatLayout):
         self.add_widget(self.bg)
 
         # Mute butonu
-        self.mute_btn = Button(text="🔊", size_hint=(None, None), size=(40, 40),
-                               pos_hint={"x": 0.02, "top": 0.98}, on_press=self.toggle_mute)
+        self.mute_btn = Button(
+            background_normal="assets/unmute.png",
+            size_hint=(None, None),
+            size=(100, 100),
+            pos_hint={"x": 0.02, "top": 0.98},
+            on_press=self.toggle_mute
+        )
+
         self.add_widget(self.mute_btn)
 
         # Başlık
@@ -88,8 +94,24 @@ class RPSGame(FloatLayout):
         self.add_widget(self.scissors_btn)
 
         # Yeni Oyun ve Çıkış Butonları
-        self.reset_btn = Button(text="Yeni Oyun", size_hint=(.4, None), height=40, pos_hint={"x": 0.05, "y": 0.02})
-        self.exit_btn = Button(text="Çıkış", size_hint=(.4, None), height=40, pos_hint={"right": 0.95, "y": 0.02})
+        self.reset_btn = Button(
+            text="Yeni Oyun",
+            size_hint=(.4, None),
+            height=70,  # 40 yerine 70 yaptık
+            font_size='20sp',  # Yazı boyutu büyüdü
+            background_color=(0.2, 0.6, 0.8, 1),
+            pos_hint={"x": 0.05, "y": 0.02}
+        )
+
+        self.exit_btn = Button(
+            text="Çıkış",
+            size_hint=(.4, None),
+            height=70,  # 40 yerine 70 yaptık
+            font_size='20sp',
+            background_color=(1, 0.3, 0.3, 1),
+            pos_hint={"right": 0.95, "y": 0.02}
+        )
+
         self.reset_btn.bind(on_press=lambda x: self.reset_game())
         self.exit_btn.bind(on_press=lambda x: sys.exit())
 
@@ -97,13 +119,11 @@ class RPSGame(FloatLayout):
         self.add_widget(self.exit_btn)
 
     def toggle_mute(self, instance):
-        self.is_muted = not self.is_muted
-        self.mute_btn.text = "🔇" if self.is_muted else "🔊"
         if self.sounds["music"]:
-            if self.is_muted:
-                self.sounds["music"].stop()
-            else:
-                self.sounds["music"].play()
+            self.is_muted = not self.is_muted
+            new_icon = "assets/mute.png" if self.is_muted else "assets/unmute.png"
+            self.mute_btn.background_normal = new_icon
+            self.sounds["music"].volume = 0 if self.is_muted else 0.3
 
     def play_sound(self, key):
         if not self.is_muted and self.sounds[key]:
