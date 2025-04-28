@@ -8,6 +8,7 @@ from kivy.core.audio import SoundLoader
 from kivy.core.window import Window
 from kivy.uix.popup import Popup
 from kivy.uix.boxlayout import BoxLayout
+from kivy.animation import Animation
 from random import choice
 import sys
 
@@ -21,6 +22,7 @@ class RPSGame(FloatLayout):
         self.computer_score = 0
         self.total_rounds = 0
         self.is_muted = False
+        self.game_over = False
         self.choices = ["rock", "paper", "scissors"]
 
         self.sounds = {
@@ -135,6 +137,36 @@ class RPSGame(FloatLayout):
         )
         self.add_widget(self.result_label)
 
+    def show_game_over_popup(self):
+        layout = BoxLayout(orientation='vertical', padding=20, spacing=20)
+
+        if self.player_score == 5:
+            result_text = "Tebrikler! Kazandın! 🎉"
+            image_source = "assets/trophy.png"
+        else:
+            result_text = "Üzgünüm! Kaybettin! 😢"
+            image_source = "assets/sad.png"
+
+        img = Image(source=image_source, size_hint=(1, 0.7), allow_stretch=True, keep_ratio=True)
+        label = Label(text=result_text, halign="center", font_size='24sp', size_hint=(1, 0.3))
+
+        layout.add_widget(img)
+        layout.add_widget(label)
+
+        popup = Popup(title="Oyun Bitti", content=layout, size_hint=(1, 0.9), auto_dismiss=True)
+        popup.open()
+
+    def show_result(self, text, color):
+        self.result_label.text = text
+        self.result_label.color = color
+        self.result_label.font_size = 36  # Başlangıç boyutunu büyüttüm (24 yerine 36)
+
+        anim = (
+                Animation(font_size=64, duration=0.3, t='out_quad') +  # büyürken daha büyük
+                Animation(font_size=64, duration=0.2, t='out_quad')  # küçülürken yine büyük kalsın
+        )
+        anim.start(self.result_label)
+
     def open_settings(self, instance):
         layout = BoxLayout(orientation='vertical', padding=20, spacing=20)
 
@@ -164,7 +196,7 @@ class RPSGame(FloatLayout):
         layout.add_widget(volume_slider)
         layout.add_widget(theme_btn)
 
-        self.settings_popup = Popup(title="Ayarlar", content=layout, size_hint=(None, None), size=(300, 400))
+        self.settings_popup = Popup(title="Ayarlar", content=layout, size_hint=(0.9, 0.8))
         self.settings_popup.open()
 
     def toggle_music(self, instance):
@@ -201,6 +233,10 @@ class RPSGame(FloatLayout):
             self.sounds[key].play()
 
     def player_choice(self, choice_str):
+        if self.game_over:
+            self.show_game_over_popup()
+            return
+
         self.play_sound("touch")
         computer = choice(self.choices)
         self.update_round(choice_str, computer)
@@ -214,25 +250,23 @@ class RPSGame(FloatLayout):
 
         # Önce sonucu göster
         if player == computer:
-            self.result_label.text = "Draw"
-            self.result_label.color = (0.3, 0.6, 1, 1)  # Mavi
+            self.show_result("Draw", (1, 1, 0, 1))  # Sarı renk
         elif (player == "rock" and computer == "scissors") or \
                 (player == "paper" and computer == "rock") or \
                 (player == "scissors" and computer == "paper"):
-            self.result_label.text = "You Win"
-            self.result_label.color = (0.2, 0.8, 0.2, 1)  # Yeşil
             self.player_score += 1
             self.player_label.text = f"YOU\n{self.player_score}"
+            self.show_result("You Win", (0, 1, 0, 1))  # Yeşil renk
         else:
-            self.result_label.text = "You Lose"
-            self.result_label.color = (1, 0.2, 0.2, 1)  # Kırmızı
             self.computer_score += 1
             self.computer_label.text = f"COMPUTER\n{self.computer_score}"
+            self.show_result("You Lose", (1, 0, 0, 1))  # Kırmızı renk
 
         self.check_game_end()
 
     def check_game_end(self):
         if self.player_score == 5 or self.computer_score == 5:
+            self.game_over = True  # <-- oyun bittiğini işaretle
             if self.player_score == 5:
                 self.play_sound("win")
             else:
@@ -244,6 +278,7 @@ class RPSGame(FloatLayout):
         self.computer_score = 0
         self.total_rounds = 0
         self.result_label.text = ""
+        self.game_over = False
         self.player_label.text = "YOU\n0"
         self.computer_label.text = "COMPUTER\n0"
         self.round_label.text = "Round: 0"
