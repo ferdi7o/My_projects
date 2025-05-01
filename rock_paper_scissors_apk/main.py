@@ -17,6 +17,65 @@ import sys
 class RPSGame(FloatLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.current_language = 'en'
+        self.translations = {
+            "en": {
+                "rock": "Rock",
+                "paper": "Paper",
+                "scissors": "Scissors",
+                "you": "YOU",
+                "computer": "COMPUTER",
+                "round": "Round",
+                "you_win": "You Win",
+                "you_lose": "You Lose",
+                "draw": "Draw",
+                "new_game": "New Game",
+                "exit": "Exit",
+                "settings": "Settings",
+                "game_over": "Game Over",
+                "start_new_game": "Start a new game.",
+                "music_on": "Music: On",
+                "music_off": "Music: Off",
+                "switch_to_night": "Switch to Night Mode",
+                "switch_to_day": "Switch to Day Mode",
+                "language": "Language",
+                "english": "English",
+                "turkish": "Türkçe",
+                "congrats_win": "Congratulations! You won!",
+                "sorry_lose": "Sorry! You lost!",
+                "win": "You Win!",
+                "lose": "You Lose!",
+
+            },
+            "tr": {
+                "rock": "Taş",
+                "paper": "Kağıt",
+                "scissors": "Makas",
+                "you": "SEN",
+                "computer": "BİLGİSAYAR",
+                "round": "Tur",
+                "you_win": "Kazandın",
+                "you_lose": "Kaybettin",
+                "draw": "Berabere",
+                "new_game": "Yeni Oyun",
+                "exit": "Çıkış",
+                "settings": "Ayarlar",
+                "game_over": "Oyun Bitti",
+                "start_new_game": "Yeni bir oyun başlatabilirsiniz.",
+                "music_on": "Müzik: Açık",
+                "music_off": "Müzik: Kapalı",
+                "switch_to_night": "Gece Moduna Geç",
+                "switch_to_day": "Gündüz Moduna Geç",
+                "language": "Dil",
+                "english": "İngilizce",
+                "turkish": "Türkçe",
+                "congrats_win": "Tebrikler! Kazandın!",
+                "sorry_lose": "Üzgünüm! Kaybettin!",
+                "win": "Kazandın!",
+                "lose": "Kaybettin!",
+
+            }
+        }
 
         self.player_score = 0
         self.computer_score = 0
@@ -54,15 +113,24 @@ class RPSGame(FloatLayout):
         self.add_widget(self.mute_btn)
 
         # Başlık
-        self.title = Label(text="ROCK PAPER SCISSORS", font_size='20sp', size_hint=(1, None), height=40,
-                           pos_hint={"top": 0.9}, halign="center")
+        self.title = Label(
+            text=self.translate("rock") + " " + self.translate("paper") + " " + self.translate("scissors"),
+            font_size='20sp',
+            size_hint=(1, None),
+            height=40,
+            pos_hint={"top": 0.9},
+            halign="center"
+        )
+
         self.add_widget(self.title)
 
         # Skorlar
-        self.player_label = Label(text="YOU\n0", font_size='18sp', size_hint=(.3, .1),
+        self.player_label = Label(text=self.translate("you") + "\n0", font_size='18sp', size_hint=(.3, .1),
                                   pos_hint={"x": 0.05, "top": 0.75})
-        self.computer_label = Label(text="COMPUTER\n0", font_size='18sp', size_hint=(.3, .1),
+
+        self.computer_label = Label(text=self.translate("computer") + "\n0", font_size='18sp', size_hint=(.3, .1),
                                     pos_hint={"right": 0.95, "top": 0.75})
+
         self.add_widget(self.player_label)
         self.add_widget(self.computer_label)
 
@@ -75,8 +143,10 @@ class RPSGame(FloatLayout):
         self.add_widget(self.computer_image)
 
         # Round sayacı
-        self.round_label = Label(text="Round: 0", font_size='14sp', size_hint=(None, None), height=30,
+        self.round_label = Label(text=self.translate("round") + ": 0", font_size='14sp', size_hint=(None, None),
+                                 height=30,
                                  pos_hint={"center_x": 0.5, "top": 0.48})
+
         self.add_widget(self.round_label)
 
         # Oyun butonları
@@ -97,7 +167,7 @@ class RPSGame(FloatLayout):
 
         # Yeni Oyun ve Çıkış Butonları
         self.reset_btn = Button(
-            text="Yeni Oyun",
+            text=self.translate("new_game"),
             size_hint=(.4, None),
             height=70,  # 40 yerine 70 yaptık
             font_size='20sp',  # Yazı boyutu büyüdü
@@ -106,7 +176,7 @@ class RPSGame(FloatLayout):
         )
 
         self.exit_btn = Button(
-            text="Çıkış",
+            text=self.translate("exit"),
             size_hint=(.4, None),
             height=70,  # 40 yerine 70 yaptık
             font_size='20sp',
@@ -137,14 +207,36 @@ class RPSGame(FloatLayout):
         )
         self.add_widget(self.result_label)
 
+        # Şu anda kullanılan dil
+        self.current_language = "en"
+
+    def toggle_language(self, instance):
+        self.current_language = "tr" if self.current_language == "en" else "en"
+        self.update_language()
+        if self.settings_popup:
+            self.settings_popup.dismiss()
+        self.open_settings(None)  # Ayarlar penceresini tekrar açıp güncellenmiş dili göster
+
+    def translate(self, key):
+        return self.translations[self.current_language].get(key, key)
+
+    def update_language(self):
+        self.title.text = self.translate("rock") + " " + self.translate("paper") + " " + self.translate("scissors")
+        self.player_label.text = self.translate("you") + f"\n{self.player_score}"
+        self.computer_label.text = self.translate("computer") + f"\n{self.computer_score}"
+        self.round_label.text = self.translate("round") + f": {self.total_rounds}"
+        self.reset_btn.text = self.translate("new_game")
+        self.exit_btn.text = self.translate("exit")
+
+
     def show_game_over_popup(self):
         layout = BoxLayout(orientation='vertical', padding=20, spacing=20)
 
         if self.player_score == 5:
-            result_text = "Tebrikler! Kazandın! 🎉"
+            result_text = self.translate("congrats_win") + " :)"
             image_source = "assets/trophy.png"
         else:
-            result_text = "Üzgünüm! Kaybettin! 😢"
+            result_text = self.translate("sorry_lose") + " :("
             image_source = "assets/sad.png"
 
         img = Image(source=image_source, size_hint=(1, 0.7), allow_stretch=True, keep_ratio=True)
@@ -153,7 +245,7 @@ class RPSGame(FloatLayout):
         layout.add_widget(img)
         layout.add_widget(label)
 
-        popup = Popup(title="Oyun Bitti", content=layout, size_hint=(1, 0.9), auto_dismiss=True)
+        popup = Popup(title=self.translate("game_over"), content=layout, size_hint=(1, 0.9), auto_dismiss=True)
         popup.open()
 
     def show_result(self, text, color):
@@ -170,33 +262,43 @@ class RPSGame(FloatLayout):
     def open_settings(self, instance):
         layout = BoxLayout(orientation='vertical', padding=20, spacing=20)
 
-        # Müzik Aç/Kapa Switch
+        # Müzik Aç/Kapa
         music_btn = Button(
-            text="Müzik: Açık" if not self.is_muted else "Müzik: Kapalı",
+            text=self.translate("music_on") if not self.is_muted else self.translate("music_off"),
             size_hint=(1, None),
             height=50
         )
         music_btn.bind(on_press=self.toggle_music)
 
-        # Ses Seviyesi Slider
         from kivy.uix.slider import Slider
         volume_slider = Slider(min=0, max=1, value=self.sounds["music"].volume if self.sounds["music"] else 0.5)
         volume_slider.bind(value=self.set_volume)
 
-        # Gece Modu (Tema değişimi) Buton
+        # Tema değişimi
         theme_btn = Button(
-            text="Gece Moduna Geç",
+            text=self.translate("switch_to_night"),
             size_hint=(1, None),
             height=50
         )
         theme_btn.bind(on_press=self.toggle_theme)
 
+        # DİL DEĞİŞTİRME Butonu
+        language_btn = Button(
+            text=self.translate("language") + ": " + (
+                self.translate("english") if self.current_language == "en" else self.translate("turkish")),
+            size_hint=(1, None),
+            height=50
+        )
+        language_btn.bind(on_press=self.toggle_language)
+
+        # Layout'a ekle
         layout.add_widget(music_btn)
-        layout.add_widget(Label(text="Ses Seviyesi"))
+        layout.add_widget(Label(text=self.translate("music_on") if not self.is_muted else self.translate("music_off")))
         layout.add_widget(volume_slider)
         layout.add_widget(theme_btn)
+        layout.add_widget(language_btn)
 
-        self.settings_popup = Popup(title="Ayarlar", content=layout, size_hint=(0.9, 0.8))
+        self.settings_popup = Popup(title=self.translate("settings"), content=layout, size_hint=(0.9, 0.8))
         self.settings_popup.open()
 
     def toggle_music(self, instance):
@@ -243,24 +345,24 @@ class RPSGame(FloatLayout):
 
     def update_round(self, player, computer):
         self.total_rounds += 1
-        self.round_label.text = f"Round: {self.total_rounds}"
+        self.round_label.text = f"{self.translate('round')}: {self.total_rounds}"
 
         self.player_image.source = f"assets/{player}.png"
         self.computer_image.source = f"assets/{computer}.png"
 
         # Önce sonucu göster
         if player == computer:
-            self.show_result("Draw", (1, 1, 0, 1))  # Sarı renk
+            self.show_result(self.translate("draw"), (1, 1, 0, 1))  # Sarı renk
         elif (player == "rock" and computer == "scissors") or \
                 (player == "paper" and computer == "rock") or \
                 (player == "scissors" and computer == "paper"):
             self.player_score += 1
-            self.player_label.text = f"YOU\n{self.player_score}"
-            self.show_result("You Win", (0, 1, 0, 1))  # Yeşil renk
+            self.player_label.text = f"{self.translate('you')}\n{self.player_score}"
+            self.show_result(self.translate("you_win"), (0, 1, 0, 1))  # Yeşil renk
         else:
             self.computer_score += 1
-            self.computer_label.text = f"COMPUTER\n{self.computer_score}"
-            self.show_result("You Lose", (1, 0, 0, 1))  # Kırmızı renk
+            self.computer_label.text = f"{self.translate('computer')}\n{self.computer_score}"
+            self.show_result(self.translate("you_lose"), (1, 0, 0, 1))  # Kırmızı renk
 
         self.check_game_end()
 
