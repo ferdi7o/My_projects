@@ -9,10 +9,11 @@ from kivy.core.window import Window
 from kivy.uix.popup import Popup
 from kivy.uix.boxlayout import BoxLayout
 from kivy.animation import Animation
+from kivy.uix.behaviors import ButtonBehavior
 from random import choice
 import sys
 
-# Window.size = (360, 640)  # KALDIRILDI: Mobilde sabit boyut verme!
+#Window.size = (500, 1024)  # KALDIRILDI: Mobilde sabit boyut verme!
 
 class RPSGame(FloatLayout):
     def __init__(self, **kwargs):
@@ -45,6 +46,20 @@ class RPSGame(FloatLayout):
                 "sorry_lose": "Sorry! You lost!",
                 "win": "You Win!",
                 "lose": "You Lose!",
+                "game_end_message": "You can start a new game.",
+                "game_over_title": "Game Over",
+                "ok": "OK",
+                "rules_text": """
+        Rock, Paper, Scissors Game Rules:
+
+        WINNER > LOSER
+               Rock > Scissors
+              Paper > Rock
+         Scissors > Paper
+
+        First to score 5 points WINS!
+        """,
+                "rules" : "Game Rules"
 
             },
             "tr": {
@@ -73,7 +88,20 @@ class RPSGame(FloatLayout):
                 "sorry_lose": "Üzgünüm! Kaybettin!",
                 "win": "Kazandın!",
                 "lose": "Kaybettin!",
+                "game_end_message": "Yeni bir oyun başlatabilirsiniz.",
+                "game_over_title": "Oyun Bitti",
+                "ok": "Tamam",
+                "rules_text": """
+        Taş, Kağıt, Makas Oyunu Kuralları:
 
+        KAZANAN > KAYBEDEN
+                  Taş > Makas
+               Kağıt > Taş
+            Makas > Kağıt
+
+        İlk 5 puanı alan KAZANIR!
+        """,
+                "rules" : "Oyunun Kuralları"
             }
         }
 
@@ -81,6 +109,7 @@ class RPSGame(FloatLayout):
         self.computer_score = 0
         self.total_rounds = 0
         self.is_muted = False
+        self.music_muted = False  # Sadece arka plan müziğini kontrol eder
         self.game_over = False
         self.choices = ["rock", "paper", "scissors"]
 
@@ -109,8 +138,8 @@ class RPSGame(FloatLayout):
             pos_hint={"x": 0.02, "top": 0.98},
             on_press=self.toggle_mute
         )
-
         self.add_widget(self.mute_btn)
+
 
         # Başlık
         self.title = Label(
@@ -125,10 +154,10 @@ class RPSGame(FloatLayout):
         self.add_widget(self.title)
 
         # Skorlar
-        self.player_label = Label(text=self.translate("you") + "\n0", font_size='18sp', size_hint=(.3, .1),
+        self.player_label = Label(text=self.translate("you") + "\n0", font_size='24sp', size_hint=(.3, .1),
                                   pos_hint={"x": 0.05, "top": 0.75})
 
-        self.computer_label = Label(text=self.translate("computer") + "\n0", font_size='18sp', size_hint=(.3, .1),
+        self.computer_label = Label(text=self.translate("computer") + "\n0", font_size='24sp', size_hint=(.3, .1),
                                     pos_hint={"right": 0.95, "top": 0.75})
 
         self.add_widget(self.player_label)
@@ -150,12 +179,12 @@ class RPSGame(FloatLayout):
         self.add_widget(self.round_label)
 
         # Oyun butonları
-        self.rock_btn = Button(background_normal="assets/rock.png", size_hint=(.25, .15),
+        self.rock_btn = Button(background_normal="assets/rock.png", size_hint=(.28, .14),
                                pos_hint={"x": 0.05, "top": 0.38})
-        self.paper_btn = Button(background_normal="assets/paper.png", size_hint=(.25, .15),
+        self.paper_btn = Button(background_normal="assets/paper.png", size_hint=(.28, .14),
                                 pos_hint={"center_x": 0.5, "top": 0.38})
-        self.scissors_btn = Button(background_normal="assets/scissors.png", size_hint=(.25, .15),
-                                   pos_hint={"right": 0.95, "top": 0.38})
+        self.scissors_btn = Button(background_normal="assets/scissors.png", size_hint=(.28, .14),
+                                   pos_hint={"right": 0.94, "top": 0.38})
 
         self.rock_btn.bind(on_press=lambda x: self.player_choice("rock"))
         self.paper_btn.bind(on_press=lambda x: self.player_choice("paper"))
@@ -169,7 +198,7 @@ class RPSGame(FloatLayout):
         self.reset_btn = Button(
             text=self.translate("new_game"),
             size_hint=(.4, None),
-            height=70,  # 40 yerine 70 yaptık
+            height=80,  # 40 yerine 70 yaptık - en 80 deneniyor!
             font_size='20sp',  # Yazı boyutu büyüdü
             background_color=(0.2, 0.6, 0.8, 1),
             pos_hint={"x": 0.05, "y": 0.02}
@@ -178,11 +207,12 @@ class RPSGame(FloatLayout):
         self.exit_btn = Button(
             text=self.translate("exit"),
             size_hint=(.4, None),
-            height=70,  # 40 yerine 70 yaptık
+            height=80,  # 40 yerine 70 yaptık - en 80 deneniyor!
             font_size='20sp',
             background_color=(1, 0.3, 0.3, 1),
             pos_hint={"right": 0.95, "y": 0.02}
         )
+
 
         self.reset_btn.bind(on_press=lambda x: self.reset_game())
         self.exit_btn.bind(on_press=lambda x: sys.exit())
@@ -207,8 +237,50 @@ class RPSGame(FloatLayout):
         )
         self.add_widget(self.result_label)
 
+        # 📜 Kurallar butonu - Mute/Unmute butonunun ALTINDA
+        layout = FloatLayout()
+        self.add_widget(layout)
+
+        rules_button = Button(
+            background_normal='assets/rules.png',
+            size_hint=(None, None),
+            size=(100, 100),
+            pos_hint={'x': 0.02, 'top': 0.85},  # Biraz aşağıya yerleştir
+            on_release=self.show_rules_popup
+        )
+        layout.add_widget(rules_button)
+
+    def show_rules_popup(self, instance):
+        # 🪨📄✂️ Kurallar metni
+        content = BoxLayout(orientation='vertical', padding=20, spacing=10)
+        content.add_widget(Label(text=self.translate("rules_text"), halign='left', valign='top', font_size=18))
+
+        close_button = Button(text=self.translate("ok"), size_hint=(1, 0.2))
+        content.add_widget(close_button)
+
+        popup = Popup(title=self.translate("rules"), content=content,
+                      size_hint=(0.8, 0.4), auto_dismiss=False)
+        close_button.bind(on_release=popup.dismiss)
+        popup.open()
         # Şu anda kullanılan dil
-        self.current_language = "en"
+
+    # def show_rules_popup(self, instance):
+    #     content = BoxLayout(orientation='vertical', padding=10, spacing=10)
+    #     content.add_widget(Label(
+    #         text='[b]Taş Kağıt Makas Kuralları:[/b]\n\n- Taş makası yener\n- Makas kağıdı yener\n- Kağıt taşı yener\n\nİlk 3 puanı alan kazanır!',
+    #         markup=True
+    #     ))
+    #     close_btn = Button(text='Kapat', size_hint=(1, 0.3))
+    #     content.add_widget(close_btn)
+    #
+    #     popup = Popup(title='Oyun Kuralları',
+    #                   content=content,
+    #                   size_hint=(None, None),
+    #                   size=(400, 400),
+    #                   auto_dismiss=False)
+    #
+    #     close_btn.bind(on_release=popup.dismiss)
+    #     popup.open()
 
     def toggle_language(self, instance):
         self.current_language = "tr" if self.current_language == "en" else "en"
@@ -245,7 +317,7 @@ class RPSGame(FloatLayout):
         layout.add_widget(img)
         layout.add_widget(label)
 
-        popup = Popup(title=self.translate("game_over"), content=layout, size_hint=(1, 0.9), auto_dismiss=True)
+        popup = Popup(title=self.translate("game_over"), content=layout, size_hint=(0.9, 0.35), auto_dismiss=True) #icon mac sonu devam edilirse!
         popup.open()
 
     def show_result(self, text, color):
@@ -266,7 +338,7 @@ class RPSGame(FloatLayout):
         music_btn = Button(
             text=self.translate("music_on") if not self.is_muted else self.translate("music_off"),
             size_hint=(1, None),
-            height=50
+            height=70
         )
         music_btn.bind(on_press=self.toggle_music)
 
@@ -278,7 +350,7 @@ class RPSGame(FloatLayout):
         theme_btn = Button(
             text=self.translate("switch_to_night"),
             size_hint=(1, None),
-            height=50
+            height=70
         )
         theme_btn.bind(on_press=self.toggle_theme)
 
@@ -287,7 +359,7 @@ class RPSGame(FloatLayout):
             text=self.translate("language") + ": " + (
                 self.translate("english") if self.current_language == "en" else self.translate("turkish")),
             size_hint=(1, None),
-            height=50
+            height=70 # ayarlar icinde ki buton dikey ayari
         )
         language_btn.bind(on_press=self.toggle_language)
 
@@ -298,7 +370,7 @@ class RPSGame(FloatLayout):
         layout.add_widget(theme_btn)
         layout.add_widget(language_btn)
 
-        self.settings_popup = Popup(title=self.translate("settings"), content=layout, size_hint=(0.9, 0.8))
+        self.settings_popup = Popup(title=self.translate("settings"), content=layout, size_hint=(0.7, 0.35)) # % Yuzdelik olarak dagilim yapar!
         self.settings_popup.open()
 
     def toggle_music(self, instance):
@@ -317,7 +389,7 @@ class RPSGame(FloatLayout):
 
     def toggle_theme(self, instance):
         if self.bg.source == "assets/background.png":
-            self.bg.source = "assets/dark_background.png"  # Gece modu arka planı (sen hazırlarsan)
+            self.bg.source = "assets/dark_background.png"  # Gece modu arka planı (ben hazirlarsam)
             instance.text = "Gündüz Moduna Geç"
         else:
             self.bg.source = "assets/background.png"
@@ -371,9 +443,13 @@ class RPSGame(FloatLayout):
             self.game_over = True  # <-- oyun bittiğini işaretle
             if self.player_score == 5:
                 self.play_sound("win")
+                result_text = self.result_label.text
             else:
                 self.play_sound("lose")
-            self.show_popup("Oyun Bitti", "Yeni bir oyun başlatabilirsiniz.")
+                result_text = self.result_label.text
+
+            popup_message = f"{result_text}\n\n{self.translate('game_end_message')}"
+            self.show_popup(self.translate('game_over_title'), popup_message) # 5. raund acilan pencere titlesi
 
     def reset_game(self):
         self.player_score = 0
@@ -390,10 +466,10 @@ class RPSGame(FloatLayout):
     def show_popup(self, title, message):
         layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
         label = Label(text=message)
-        btn = Button(text="Tamam", size_hint_y=None, height=40)
+        btn = Button(text=self.translate("ok"), size_hint_y=None, height=70)
         layout.add_widget(label)
         layout.add_widget(btn)
-        popup = Popup(title=title, content=layout, size_hint=(None, None), size=(300, 200))
+        popup = Popup(title=title, content=layout, size_hint=(0.8, 0.25)) # mac sonu ilk cikan pencere
         btn.bind(on_press=popup.dismiss)
         popup.open()
 
@@ -403,3 +479,8 @@ class RPSApp(App):
 
 if __name__ == "__main__":
     RPSApp().run()
+
+# popup pencereleri guncellendi
+# newgame/cikis butonlari buyutuldu 80 oldu
+# ayarlar penceresi kucultuldu, icindeki butonlar buyutuldu
+# oyun ikonlari duzeltildi 19:15 (makas 95ten 94 konumlandirildi)
